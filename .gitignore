@@ -1,0 +1,47 @@
+# --- Системные файлы ---
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- Папки IDE и редакторы (VS Code, IntelliJ, Eclipse) ---
+.idea/
+*.iml
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.project
+.settings/
+
+# --- Зависимости (не коммитим node_modules, venv и т.д.) ---
+node_modules/
+bower_components/
+vendor/
+.venv/
+env/
+venv/
+__pycache__/
+
+# --- Переменные окружения и секреты (ВАЖНО!) ---
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+config.json
+
+# --- Логи и отчеты ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+coverage/
+.nyc_output/
+
+# --- Прочее ---
+dist/
+build/
+*.bak

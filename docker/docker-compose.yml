@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  dwh_postgres:
+    image: postgres:15-alpine
+    container_name: olist_dwh_core
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: olist_dwh
+    ports:
+      - "${DB_PORT}:5432" # Пробрасываем порт из контейнера на хост-машину
+    shm_size: 1g # Увеличиваем размер разделяемой памяти (/dev/shm) для тяжелых запросов [16]
+    volumes:
+      - dwh_data:/var/lib/postgresql/data # Монтируем volume, чтобы данные не исчезли при удалении контейнера [17]
+      - ../datasets:/opt/datasets # Монтируем папку с сырыми данными для быстрого COPY [18]
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf # Монтируем кастомный конфиг для тюнинга памяти [19]
+    command: >
+      postgres 
+      -c config_file=/etc/postgresql/postgresql.conf
+    restart: unless-stopped
+    networks: 
+      - olist_network
+
+  pgadmin:
+      image: dpage/pgadmin4
+      container_name: olist_pgadmin
+      environment:
+        PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+        PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      ports:
+        - "8080:80"
+      depends_on:
+        - dwh_postgres
+      restart: unless-stopped
+      networks:
+      - olist_network
+volumes:
+  dwh_data:
+
+networks:
+  olist_network:
+    driver: bridge
