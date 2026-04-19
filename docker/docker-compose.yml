@@ -4,6 +4,8 @@ services:
   dwh_postgres:
     image: postgres:15-alpine
     container_name: olist_dwh_core
+    env_file: 
+      - ../.env # Загружаем переменные окружения из файла .env
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -25,6 +27,8 @@ services:
   pgadmin:
       image: dpage/pgadmin4
       container_name: olist_pgadmin
+      env_file:
+        - ../.env
       environment:
         PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
         PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
