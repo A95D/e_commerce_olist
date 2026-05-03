@@ -370,7 +370,7 @@ BEGIN
         p_batch_id,
         v_load_date as load_date,
         p_source_name as source_name
-    from ext.olist_product_category_translation;
+    from ext.product_category_name_translation;
 
 exception
     when others then 

@@ -99,8 +99,8 @@ create table if not exists staging.stg_orders (
 create table if not exists staging.stg_products (
     product_id varchar not null,
     product_category_name varchar,
-    product_name_lenght int,
-    product_description_lenght int,
+    product_name_length int,
+    product_description_length int,
     product_photos_qty int,
     product_weight_g numeric(12, 2),
     product_length_cm numeric(12, 2),
