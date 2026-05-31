@@ -13,8 +13,11 @@ BEGIN
     where batch_id = p_batch_id
         and (order_id is null or product_id is null or seller_id is null);
 
-    --2. Загружаем Хабы (только те записи, где есть ключи)
-    --2.1 Hub customer
+    -------------------------------------------------------------------------------
+    -- 2. ЗАГРУЗКА ХАБОВ
+    -------------------------------------------------------------------------------
+    
+    -- 2.1 Hub customer
     insert into raw_vault.hub_customer (hub_customer_hash, customer_unique_id, load_date, record_source, batch_id)
     select DISTINCT
         md5(upper(trim(customer_unique_id))),
@@ -43,8 +46,8 @@ BEGIN
     --2.3 Hub geolocation
     insert into raw_vault.hub_geolocation(hub_geolocation_hash, zip_code_prefix, load_date, record_source, batch_id)
     select DISTINCT
-        md5(upper(trim(zip_code_prefix))),
-        upper(trim(zip_code_prefix)),
+        md5(upper(trim(zip_code_prefix::text))),
+        upper(trim(zip_code_prefix::text)),
         p_load_date,
         p_source_name,
         p_batch_id
@@ -85,7 +88,8 @@ BEGIN
         md5(upper(trim(review_id))),
         upper(trim(review_id)),
         p_load_date,
-        p_source_name
+        p_source_name,
+        p_batch_id
     from staging.stg_order_reviews
     where batch_id = p_batch_id
         and review_id is not null
@@ -98,15 +102,19 @@ BEGIN
         md5(upper(trim(product_category_name))),
         upper(trim(product_category_name)),
         p_load_date,
-        p_source_name
+        p_source_name,
+        p_batch_id
     from staging.stg_product_category_translation
     where batch_id = p_batch_id
         and product_category_name is not null
     on conflict(hub_product_category_hash) do nothing;
 
 
-    --3. Загружаем линки
-    --3.1 Link order_item
+    -------------------------------------------------------------------------------
+    -- 3. ЗАГРУЗКА ЛИНКОВ
+    -------------------------------------------------------------------------------
+
+    -- 3.1 Link order_item
     insert into raw_vault.link_order_items (
         link_order_item_hash,
         hub_order_hash,
@@ -132,7 +140,7 @@ BEGIN
     on conflict (link_order_item_hash) do nothing;
 
 
-    --3.2 Link order_review
+    ---3.2 Link order_review
     insert into raw_vault.link_order_review (
         link_order_review_hash,
         hub_review_hash,
@@ -142,7 +150,7 @@ BEGIN
         batch_id 
     )
     select 
-        md5(upper(trim(review_id))) || '|' || upper(trim(order_id)),
+        md5(upper(trim(review_id)) || '|' || upper(trim(order_id))),
         md5(upper(trim(review_id))),
         md5(upper(trim(order_id))),
         p_load_date,
@@ -164,16 +172,17 @@ BEGIN
         batch_id    
     )
     select 
-        md5(upper(trim(order_id)) || '|' || upper(trim(customer_id))),
+        md5(upper(trim(order_id)) || '|' || upper(trim(customer_unique_id))),
         md5(upper(trim(order_id))),
-        md5(upper(trim(customer_id))),
+        md5(upper(trim(customer_unique_id))),
         p_load_date,
         p_source_name,
         p_batch_id
-    from staging.stg_orders
-    where batch_id = p_batch_id
-        and order_id is not NULL
-        and customer_id is not NULL
+    from staging.stg_orders o
+    join staging.stg_customers c on o.customer_id = c.customer_id
+    where o.batch_id = p_batch_id
+        and o.order_id is not NULL
+        and c.customer_unique_id is not NULL
     on conflict(link_order_customer_hash) do nothing;
 
     --3.4 Link seller_geolocation
@@ -186,20 +195,23 @@ BEGIN
         batch_id
     )
     select 
-        md5(upper(trim(seller_id)) || '|' || upper(trim(zip_code_prefix))),
+        md5(upper(trim(seller_id)) || '|' || upper(trim(zip_code_prefix::text))),
         md5(upper(trim(seller_id))),
-        md5(upper(trim(zip_code_prefix))),
+        md5(upper(trim(zip_code_prefix::text))),
         p_load_date,
         p_source_name,
         p_batch_id
-    from staging.stg_seller_geolocation
+    from staging.stg_sellers
     where batch_id = p_batch_id
         and seller_id is not NULL
         and zip_code_prefix is not NULL
     on conflict(link_seller_geolocation_hash) do nothing;
 
-    --4. Загружаем Сателлиты
-    --4.1 Satellite order_item_finance
+    -------------------------------------------------------------------------------
+    -- 4. ЗАГРУЗКА САТЕЛЛИТОВ
+    -------------------------------------------------------------------------------
+
+    -- 4.1 Satellite order_item_finance (Сателлит Линка)
     insert into raw_vault.sat_order_item_finance (
         link_order_item_hash,
         order_item_id,
@@ -253,7 +265,7 @@ BEGIN
             )
             and latest.hash_diff = src.row_hash);
 
-    --4.2 Satellite order_status
+    -- 4.2 Satellite order_status (Сателлит Хаба Заказов)
         insert into raw_vault.sat_order_status (
         hub_order_hash,
         order_status,
@@ -273,6 +285,7 @@ BEGIN
         src.order_purchase_timestamp,
         src.order_approved_at,
         src.order_delivered_carrier_date,
+        src.order_delivered_customer_date,
         src.order_estimated_delivery_date,
         src.row_hash,
         p_load_date,
@@ -315,8 +328,8 @@ BEGIN
             and latest.hash_diff = src.row_hash);
 
 
-    --4.3 Satellite sat_order_payments
-        insert into raw_vault.sat_order_payments (
+    -- 4.3 Satellite sat_order_payments (Multi-Active Сателлит Хаба заказов)
+    insert into raw_vault.sat_order_payments (
         hub_order_hash,
         payment_sequential,
         payment_type,
@@ -347,7 +360,6 @@ BEGIN
             payment_value,
             -- Hash diff для отслеживания изменений в атрибутах
             md5(
-                coalesce(payment_sequential::text, 'null') || '|' ||
                 coalesce(payment_type::text, 'null') || '|' ||
                 coalesce(payment_installments::text, 'null') || '|' ||
                 coalesce(payment_value::text, 'null')
@@ -362,10 +374,185 @@ BEGIN
         select 1
         from raw_vault.sat_order_payments as latest
         where latest.hub_order_hash = src.link_hash
+            and latest.payment_sequential = src.payment_sequential
             and latest.load_date = (
                 select max(load_date)
                 from raw_vault.sat_order_payments
                 where hub_order_hash = src.link_hash
+                    and payment_sequential = src.payment_sequential
+            )
+            and latest.hash_diff = src.row_hash);
+
+    -- 4.4 Сателлит Customer Details (Сателлит Хаба Клиентов)
+    insert into raw_vault.sat_customer_details (
+        hub_customer_hash,
+        customer_city,
+        customer_state,
+        zip_code_prefix,
+        hash_diff,
+        load_date,
+        record_source,
+        batch_id
+    )
+    select 
+        src.link_hash,
+        src.customer_city,
+        src.customer_state,
+        src.zip_code_prefix,
+        src.row_hash,
+        p_load_date,
+        p_source_name,
+        p_batch_id
+    from (
+        select
+            --Ключ связи (бизнес-ключ + разделители)
+            md5(upper(trim(customer_unique_id))) as link_hash,
+            customer_city,
+            customer_state,
+            customer_zip_code_prefix,
+            -- Hash diff для отслеживания изменений в атрибутах
+            md5(
+                coalesce(customer_city::text, 'null') || '|' ||
+                coalesce(customer_state::text, 'null') || '|' ||
+                coalesce(customer_zip_code_prefix::text, 'null')
+            ) as row_hash
+        from staging.stg_customers
+        where batch_id = p_batch_id
+            and customer_unique_id is not NULL
+        ) src
+    where not exists (
+        -- Логика Delta Check: вставляем только если данных еще нет 
+        -- или если последние данные отличаются от текущих (по hash_diff)
+        select 1
+        from raw_vault.sat_customer_details as latest
+        where latest.hub_customer_hash = src.link_hash
+            and latest.load_date = (
+                select max(load_date)
+                from raw_vault.sat_customer_details
+                where hub_customer_hash = src.link_hash
+            )
+            and latest.hash_diff = src.row_hash);
+
+    -- 4.5 Сателлит Product Details (Сателлит Хаба Товаров)
+    insert into raw_vault.sat_product_details (
+        hub_product_hash,
+        category_name,
+        name_length,
+        description_length,
+        photos_qty,
+        weight_g,
+        length_cm,
+        height_cm,
+        width_cm,
+        hash_diff,
+        load_date,
+        record_source,
+        batch_id
+    )
+    select 
+        src.link_hash,
+        src.product_category_name,
+        src.product_name_length,
+        src.product_description_length,
+        src.product_photos_qty,
+        src.product_weight_g,
+        src.product_length_cm,
+        src.product_height_cm,
+        src.product_width_cm,
+        src.row_hash,
+        p_load_date,
+        p_source_name,
+        p_batch_id
+    from (
+        select
+            --Ключ связи (бизнес-ключ + разделители)
+            md5(upper(trim(product_id))) as link_hash,
+            product_category_name,
+            product_name_length,
+            product_description_length,
+            product_photos_qty,
+            product_weight_g,
+            product_length_cm,
+            product_height_cm,
+            product_width_cm,
+            -- Hash diff для отслеживания изменений в атрибутах
+            md5(
+                coalesce(product_weight_g::text, 'null') || '|' ||
+                coalesce(product_length_cm::text, 'null') || '|' ||
+                coalesce(product_height_cm::text, 'null') || '|' ||
+                coalesce(product_width_cm::text, 'null')
+            ) as row_hash
+        from staging.stg_products
+        where batch_id = p_batch_id
+            and product_id is not NULL
+        ) src
+    where not exists (
+        -- Логика Delta Check: вставляем только если данных еще нет 
+        -- или если последние данные отличаются от текущих (по hash_diff)
+        select 1
+        from raw_vault.sat_product_details as latest
+        where latest.hub_product_hash = src.link_hash
+            and latest.load_date = (
+                select max(load_date)
+                from raw_vault.sat_product_details
+                where hub_product_hash = src.link_hash
+            )
+            and latest.hash_diff = src.row_hash);
+
+
+    -- 4.6 Сателлит order_reviews (Сателлит Хаба Отзывов)
+    insert into raw_vault.sat_review_details (
+        hub_review_hash,
+        review_score,
+        review_comment_title,
+        review_comment_message,
+        review_creation_date,
+        review_answer_timestamp,
+        hash_diff,
+        load_date,
+        record_source,
+        batch_id
+    )
+    select 
+        src.link_hash,
+        src.review_score,
+        src.review_comment_title,
+        src.review_comment_message,
+        src.review_creation_date,
+        src.review_answer_timestamp,
+        src.row_hash,
+        p_load_date,
+        p_source_name,
+        p_batch_id
+    from (
+        select
+            --Ключ связи (бизнес-ключ + разделители)
+            md5(upper(trim(review_id))) as link_hash,
+            review_score,
+            review_comment_title,
+            review_comment_message,
+            review_creation_date,
+            review_answer_timestamp,
+            -- Hash diff для отслеживания изменений в атрибутах
+            md5(
+                coalesce(review_score::text, 'null') || '|' ||
+                coalesce(review_comment_message::text, 'null') || '|' ||
+                coalesce(review_answer_timestamp::text, 'null') 
+            ) as row_hash
+        from staging.stg_order_reviews
+        where batch_id = p_batch_id
+            and order_id is not NULL
+        ) src
+    where not exists (
+        -- Логика Delta Check: вставляем только если данных еще нет 
+        -- или если последние данные отличаются от текущих (по hash_diff)
+        select 1
+        from raw_vault.sat_review_details as latest
+        where latest.hub_review_hash = src.link_hash
+            and latest.load_date = (
+                select max(load_date)
+                from raw_vault.sat_review_details
+                where hub_review_hash = src.link_hash
             )
             and latest.hash_diff = src.row_hash);
 

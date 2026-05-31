@@ -210,11 +210,11 @@ create table if not exists raw_vault.sat_order_payments (
 -- DROP TABLE IF EXISTS raw_vault.sat_customer_details CASCADE;
 create table if not exists raw_vault.sat_customer_details (
     hub_customer_hash char(32) not null,
-    load_date timestamp not null,
     customer_city varchar,
     customer_state varchar,
     zip_code_prefix integer,
     hash_diff char(32) not null,
+    load_date timestamp not null,
     record_source varchar not null,
     batch_id int not null,
     constraint pk_raw_vault_sat_customer_details primary key (hub_customer_hash, load_date)
@@ -224,7 +224,6 @@ create table if not exists raw_vault.sat_customer_details (
 -- DROP TABLE IF EXISTS raw_vault.sat_product_details CASCADE;
 CREATE TABLE IF NOT EXISTS raw_vault.sat_product_details (
     hub_product_hash     CHAR(32) NOT NULL,
-    load_date           TIMESTAMP NOT NULL,
     category_name       VARCHAR,
     name_length         INTEGER,
     description_length  INTEGER,
@@ -234,6 +233,7 @@ CREATE TABLE IF NOT EXISTS raw_vault.sat_product_details (
     height_cm           NUMERIC(12, 2),
     width_cm            NUMERIC(12, 2),
     hash_diff           CHAR(32) NOT NULL,
+    load_date           TIMESTAMP NOT NULL,
     record_source       VARCHAR NOT NULL,
     batch_id            INTEGER NOT NULL,
     constraint pk_raw_vault_sat_product_details primary key (hub_product_hash, load_date)
