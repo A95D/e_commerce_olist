@@ -300,7 +300,7 @@ BEGIN
             order_approved_at,
             order_delivered_carrier_date,
             order_delivered_customer_date,
-            order_estimated_delivery_date
+            order_estimated_delivery_date,
             -- Hash diff для отслеживания изменений в атрибутах
             md5(
                 coalesce(order_status::text, 'null') || '|' ||
