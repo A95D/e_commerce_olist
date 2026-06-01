@@ -13,6 +13,7 @@ create schema if not exists ext;
 -- 4. Создание внешних таблиц для файлов Olist
 
 -- 4.1 Внешняя таблица для клиентов
+-- drop foreign table if exists ext.olist_customers cascade;
 create foreign table if not exists ext.olist_customers (
     customer_id varchar,
     customer_unique_id varchar,
@@ -24,6 +25,7 @@ server olist_files
 options (filename '/opt/datasets/olist_customers_dataset.csv', format 'csv', header 'true', delimiter ',');
 
 -- 4.2 Внешняя таблица для геолокации
+-- drop foreign table if exists ext.olist_geolocation cascade;
 create foreign table if not exists ext.olist_geolocation (
     geolocation_zip_code_prefix int,
     geolocation_lat numeric(18, 14),
@@ -35,6 +37,7 @@ server olist_files
 options (filename '/opt/datasets/olist_geolocation_dataset.csv', format 'csv', header 'true', delimiter ',');
 
 -- 4.3 Внешняя таблица для товаров в заказах
+-- drop foreign table if exists ext.olist_order_items cascade;
 create foreign table if not exists ext.olist_order_items (
     order_id varchar,
     order_item_id int,
@@ -48,6 +51,7 @@ server olist_files
 options (filename '/opt/datasets/olist_order_items_dataset.csv', format 'csv', header 'true', delimiter ',');
 
 -- 4.4 Внешняя таблица для платежей заказов
+-- drop foreign table if exists ext.olist_order_payments cascade;
 create foreign table if not exists ext.olist_order_payments (
     order_id varchar,
     payment_sequential int,
@@ -59,6 +63,7 @@ server olist_files
 options (filename '/opt/datasets/olist_order_payments_dataset.csv', format 'csv', header 'true', delimiter ',');
 
 -- 4.5 Внешняя таблица для отзывов
+-- drop foreign table if exists ext.olist_order_reviews cascade;
 create foreign table if not exists ext.olist_order_reviews (
     review_id varchar,
     order_id varchar,
@@ -72,6 +77,7 @@ server olist_files
 options (filename '/opt/datasets/olist_order_reviews_dataset.csv', format 'csv', header 'true', delimiter ',');
 
 -- 4.6 Внешняя таблица для заказов
+-- drop foreign table if exists ext.olist_orders cascade;
 create foreign table if not exists ext.olist_orders (
     order_id varchar,
     customer_id varchar,
@@ -86,6 +92,7 @@ server olist_files
 options (filename '/opt/datasets/olist_orders_dataset.csv', format 'csv', header 'true', delimiter ',');
 
 -- 4.7 Внешняя таблица для товаров
+-- drop foreign table if exists ext.olist_products cascade;
 create foreign table if not exists ext.olist_products (
     product_id varchar,
     product_category_name varchar,
@@ -101,6 +108,7 @@ server olist_files
 options (filename '/opt/datasets/olist_products_dataset.csv', format 'csv', header 'true', delimiter ',');
 
 -- 4.8 Внешняя таблица для продавцов
+-- drop foreign table if exists ext.olist_sellers cascade;
 create foreign table if not exists ext.olist_sellers (
     seller_id varchar,
     seller_zip_code_prefix int,
@@ -111,6 +119,7 @@ server olist_files
 options (filename '/opt/datasets/olist_sellers_dataset.csv', format 'csv', header 'true', delimiter ',');
 
 -- 4.9 Внешняя таблица для перевода категорий товаров
+-- drop foreign table if exists ext.product_category_name_translation cascade;
 create foreign table if not exists ext.product_category_name_translation (
     product_category_name varchar,
     product_category_name_english varchar

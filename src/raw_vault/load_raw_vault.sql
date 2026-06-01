@@ -1,4 +1,6 @@
-create or replace procedure raw_vault.load_olist_order_items(p_batch_id int, p_load_date timestamp, p_source_name varchar)
+--DROP PROCEDURE IF EXISTS raw_vault.load_olist_order_items(INT, TIMESTAMP, VARCHAR);
+
+create or replace procedure raw_vault.load_olist_order_items(p_batch_id int, p_load_date timestamp without time zone, p_source_name varchar)
 language plpgsql
 as $$
 BEGIN
@@ -8,7 +10,7 @@ BEGIN
     select 
         p_batch_id,
         'Отсутствует бизнес-ключ: order_id или product_id is NULL',
-        row_to_json(stg)
+        stg
     from staging.stg_order_items stg
     where batch_id = p_batch_id
         and (order_id is null or product_id is null or seller_id is null);
@@ -46,14 +48,14 @@ BEGIN
     --2.3 Hub geolocation
     insert into raw_vault.hub_geolocation(hub_geolocation_hash, zip_code_prefix, load_date, record_source, batch_id)
     select DISTINCT
-        md5(upper(trim(zip_code_prefix::text))),
-        upper(trim(zip_code_prefix::text)),
+        md5(upper(trim(geolocation_zip_code_prefix::text))),
+        upper(trim(geolocation_zip_code_prefix::text)),
         p_load_date,
         p_source_name,
         p_batch_id
     from staging.stg_geolocation
     where batch_id = p_batch_id
-        and zip_code_prefix is not null
+        and geolocation_zip_code_prefix is not null
     on conflict(hub_geolocation_hash) do nothing;
 
     --2.4 Hub order
@@ -195,16 +197,16 @@ BEGIN
         batch_id
     )
     select 
-        md5(upper(trim(seller_id)) || '|' || upper(trim(zip_code_prefix::text))),
+        md5(upper(trim(seller_id)) || '|' || upper(trim(seller_zip_code_prefix::text))),
         md5(upper(trim(seller_id))),
-        md5(upper(trim(zip_code_prefix::text))),
+        md5(upper(trim(seller_zip_code_prefix::text))),
         p_load_date,
         p_source_name,
         p_batch_id
     from staging.stg_sellers
     where batch_id = p_batch_id
         and seller_id is not NULL
-        and zip_code_prefix is not NULL
+        and seller_zip_code_prefix is not NULL
     on conflict(link_seller_geolocation_hash) do nothing;
 
     -------------------------------------------------------------------------------
@@ -300,7 +302,7 @@ BEGIN
             order_approved_at,
             order_delivered_carrier_date,
             order_delivered_customer_date,
-            order_estimated_delivery_date
+            order_estimated_delivery_date,
             -- Hash diff для отслеживания изменений в атрибутах
             md5(
                 coalesce(order_status::text, 'null') || '|' ||
@@ -398,7 +400,7 @@ BEGIN
         src.link_hash,
         src.customer_city,
         src.customer_state,
-        src.zip_code_prefix,
+        src.customer_zip_code_prefix,
         src.row_hash,
         p_load_date,
         p_source_name,
@@ -415,12 +417,14 @@ BEGIN
                 coalesce(customer_city::text, 'null') || '|' ||
                 coalesce(customer_state::text, 'null') || '|' ||
                 coalesce(customer_zip_code_prefix::text, 'null')
-            ) as row_hash
+            ) as row_hash,
+            row_number() over (partition by customer_unique_id order by customer_id) rn
         from staging.stg_customers
         where batch_id = p_batch_id
             and customer_unique_id is not NULL
         ) src
-    where not exists (
+    where src.rn = 1
+        and not exists (
         -- Логика Delta Check: вставляем только если данных еще нет 
         -- или если последние данные отличаются от текущих (по hash_diff)
         select 1
@@ -537,13 +541,15 @@ BEGIN
             md5(
                 coalesce(review_score::text, 'null') || '|' ||
                 coalesce(review_comment_message::text, 'null') || '|' ||
-                coalesce(review_answer_timestamp::text, 'null') 
-            ) as row_hash
+                coalesce(review_answer_timestamp::text, 'null')
+            ) as row_hash,
+            row_number() over (partition by review_id order by order_id) rn
         from staging.stg_order_reviews
         where batch_id = p_batch_id
             and order_id is not NULL
         ) src
-    where not exists (
+    where src.rn = 1 
+        and not exists (
         -- Логика Delta Check: вставляем только если данных еще нет 
         -- или если последние данные отличаются от текущих (по hash_diff)
         select 1

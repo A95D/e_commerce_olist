@@ -18,6 +18,16 @@ create table if not exists raw_vault.etl_audit_log(
     constraint pk_raw_vault_etl_audit_log primary key (log_id)
 );
 
+-- 1. Таблица регистрации батчей (Сессий загрузки)
+CREATE TABLE IF NOT EXISTS raw_vault.etl_batch_log (
+    batch_id        SERIAL PRIMARY KEY,          -- Автоматический инкремент ID
+    status          VARCHAR(20) NOT NULL,        -- STARTED, COMPLETED, FAILED
+    source_system   VARCHAR(100) NOT NULL,       -- Имя источника (например, 'OLIST_MARKETPLACE')
+    run_timestamp   TIMESTAMP NOT NULL,          -- Время старта батча
+    end_timestamp   TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- Время завершения (ставится при апдейте)
+);
+
+
 -------------------------------------------------------------------------------
 -- 2. HUBS (Существительные / Бизнес-сущности)
 -- Только уникальные бизнес-ключи. insert-only.
@@ -98,7 +108,7 @@ create table if not exists raw_vault.hub_product_category (
     record_source varchar not null,
     batch_id int not null,
     constraint pk_raw_vault_hub_product_category primary key (hub_product_category_hash)
-)
+);
 
 -------------------------------------------------------------------------------
 -- 3. LINKS (Глаголы / Отношения)
@@ -264,3 +274,27 @@ CREATE INDEX IF NOT EXISTS idx_link_item_order ON raw_vault.link_order_items (hu
 CREATE INDEX IF NOT EXISTS idx_link_item_prod  ON raw_vault.link_order_items (hub_product_hash);
 CREATE INDEX IF NOT EXISTS idx_link_item_seller ON raw_vault.link_order_items (hub_seller_hash);
 CREATE INDEX IF NOT EXISTS idx_sat_order_status_h ON raw_vault.sat_order_status (hub_order_hash);
+
+-- 1. Для финансового сателлита позиций
+CREATE INDEX IF NOT EXISTS idx_sat_order_item_finance_delta 
+ON raw_vault.sat_order_item_finance (link_order_item_hash, load_date DESC);
+
+-- 2. Для сателлита статусов заказов
+CREATE INDEX IF NOT EXISTS idx_sat_order_status_delta 
+ON raw_vault.sat_order_status (hub_order_hash, load_date DESC);
+
+-- 3. Для сателлита платежей
+CREATE INDEX IF NOT EXISTS idx_sat_order_payments_delta 
+ON raw_vault.sat_order_payments (hub_order_hash, payment_sequential, load_date DESC);
+
+-- 4. Для сателлита данных клиентов
+CREATE INDEX IF NOT EXISTS idx_sat_customer_details_delta 
+ON raw_vault.sat_customer_details (hub_customer_hash, load_date DESC);
+
+-- 5. Для сателлита описания товаров
+CREATE INDEX IF NOT EXISTS idx_sat_product_details_delta 
+ON raw_vault.sat_product_details (hub_product_hash, load_date DESC);
+
+-- 6. Для сателлита отзывов
+CREATE INDEX IF NOT EXISTS idx_sat_review_details_delta 
+ON raw_vault.sat_review_details (hub_review_hash, load_date DESC);
