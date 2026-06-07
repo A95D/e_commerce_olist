@@ -11,14 +11,14 @@ begin
         batch_id
     )
     values (
-        lpad(0,32,0),
+        lpad('0',32,'0'),
         'N/A',
         'N/A',
-        'N/A',
-        lpad(0,32,0),
+        0,
+        lpad('0',32,'0'),
         '1900-01-01 00:00:00'::timestamp,
         'SYSTEM',
-        'N/A'
+        0
     );
 
     insert into raw_vault.sat_order_item_finance (
@@ -33,15 +33,15 @@ begin
         batch_id
     )
     values (
-        lpad(0,32,0),
+        lpad('0',32,'0'),
         0,
         '1900-01-01 00:00:00'::timestamp,
         0.00,
         0.00,
-        lpad(0,32,0),
+        lpad('0',32,'0'),
         '1900-01-01 00:00:00'::timestamp,
         'SYSTEM',
-        'N/A'
+        0
     );
 
     insert into raw_vault.sat_order_status (
@@ -58,17 +58,17 @@ begin
         batch_id
     )
     values (
-        lpad(0,32,0),
+        lpad('0',32,'0'),
         'N/A',
         '1900-01-01 00:00:00'::timestamp,
         '1900-01-01 00:00:00'::timestamp,
         '1900-01-01 00:00:00'::timestamp,
         '1900-01-01 00:00:00'::timestamp,
         '1900-01-01 00:00:00'::timestamp,
-        lpad(0,32,0),
+        lpad('0',32,'0'),
         '1900-01-01 00:00:00'::timestamp,
         'SYSTEM',
-        'N/A'
+        0
     );
 
     insert into raw_vault.sat_order_payments (
@@ -83,15 +83,15 @@ begin
         batch_id
     )
     values (
-        lpad(0,32,0),
+        lpad('0',32,'0'),
         0,
         'N/A',
         0,
         0.00,
-        lpad(0,32,0),
+        lpad('0',32,'0'),
         '1900-01-01 00:00:00'::timestamp,
         'SYSTEM',
-        'N/A'
+        0
     );
 
     insert into raw_vault.sat_product_details (
@@ -110,7 +110,7 @@ begin
         batch_id
     )
     values (
-        lpad(0,32,0),
+        lpad('0',32,'0'),
         'N/A',
         0,
         0,
@@ -119,10 +119,10 @@ begin
         0.00,
         0.00,
         0.00,
-        lpad(0,32,0),
+        lpad('0',32,'0'),
         '1900-01-01 00:00:00'::timestamp,
         'SYSTEM',
-        'N/A'
+        0
     );
 
     insert into raw_vault.sat_review_details (
@@ -138,16 +138,16 @@ begin
         batch_id
     )
     values (
-        lpad(0,32,0),
+        lpad('0',32,'0'),
         0,
         'N/A',
         'N/A',
         '1900-01-01 00:00:00'::timestamp,
         '1900-01-01 00:00:00'::timestamp,
-        lpad(0,32,0),
+        lpad('0',32,'0'),
         '1900-01-01 00:00:00'::timestamp,
         'SYSTEM',
-        'N/A'
+        0
     );
 
 end $$;
