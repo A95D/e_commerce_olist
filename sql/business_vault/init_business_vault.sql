@@ -20,5 +20,5 @@ create table if not exists business_vault.bridge_order_product_seller (
     hub_order_hash char(32) not null,
     hub_product_hash char(32) not null,
     hub_seller_hash char(32) not null,
-    constraint pk_bridge_order_product_seller primary key (hub_seller_hash, hub_product_hash, hub_order_hash, link_order_item_hash, snapshot_date)
+    constraint pk_bridge_order_product_seller PRIMARY KEY (link_order_item_hash, snapshot_date)
 );
