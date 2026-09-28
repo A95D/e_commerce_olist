@@ -1,248 +1,255 @@
-# 🛒 Olist E-Commerce Data Warehouse
+# Olist E-Commerce Data Warehouse
 
 <p align="center">
   <img src="https://img.shields.io/badge/PostgreSQL-15-336791?logo=postgresql" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/dbt-1.5+-FF6B35?logo=dbt" alt="dbt">
   <img src="https://img.shields.io/badge/Data_Vault-2.0-blue" alt="Data Vault 2.0">
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker" alt="Docker">
 </p>
 
-Проект Data Warehouse для анализа данных бразильского e-commerce маркетплейса **Olist** с использованием методологии **Data Vault 2.0**.
+Data Warehouse для анализа бразильского e-commerce маркетплейса **Olist** с использованием **dbt** и методологии **Data Vault 2.0**.
 
-## 📋 Описание проекта
+## Описание
 
-Данный проект представляет собой полноценное хранилище данных (DWH) для аналитики электронной коммерции. Данные взяты из публичного датасета [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce).
+Полноценное хранилище данных для аналитики электронной коммерции, построенное на публичном датасете [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce). Проект использует **dbt** для управления трансформацией данных и автоматизирует создание компонентов Data Vault 2.0 через переиспользуемые макросы.
 
-### 🎯 Цели проекта
-
-- Построение масштабируемого хранилища данных на основе Data Vault 2.0
-- Реализация ETL-процессов для загрузки и трансформации данных
-- Обеспечение историчности и аудита всех изменений данных
-- Создание основы для построения аналитических витрин (Data Marts)
-
-## 🏗️ Архитектура
+## Архитектура
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         DATA WAREHOUSE                               │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────┐  │
-│  │   EXT       │───▶│  STAGING    │───▶│      RAW VAULT          │  │
-│  │ (CSV Files) │    │ (stg_*)     │    │  (Hub/Link/Satellite)   │  │
-│  └─────────────┘    └─────────────┘    └─────────────────────────┘  │
-│                                                                      │
-│  External Tables    Промежуточный     Data Vault 2.0                │
-│  (Foreign Data)     слой очистки     (Bronze Layer)                 │
-└─────────────────────────────────────────────────────────────────────┘
+EXT (Raw CSV) → STAGING (stg_*) → RAW_VAULT (Hub/Link/Sat) → BUSINESS_VAULT (Витрины)
 ```
 
-### 📊 Слои данных
+### Слои данных
 
-| Слой | Схема | Описание |
-|------|-------|----------|
-| **External** | `ext` | Внешние таблицы для чтения CSV файлов |
-| **Staging** | `staging` | Промежуточные таблицы для очистки и валидации |
-| **Raw Vault** | `raw_vault` | Модель Data Vault 2.0 (Hubs, Links, Satellites) |
+| Слой | Схема | Тип | Описание |
+|------|-------|-----|----------|
+| External | `ext` | Source | Внешние таблицы CSV |
+| Staging | `staging` | View | Очистка и стандартизация |
+| Raw Vault | `raw_vault` | Incremental | Data Vault 2.0 (Hubs, Links, Satellites) |
+| Business Vault | `business_vault` | View/Table | Аналитические витрины и PIT таблицы |
 
-## 📁 Структура проекта
+## Структура проекта
 
 ```
 e_commerce_olist/
-├── 📂 datasets/                    # Исходные CSV данные Olist
-│   ├── olist_customers_dataset.csv
-│   ├── olist_geolocation_dataset.csv
-│   ├── olist_order_items_dataset.csv
-│   ├── olist_order_payments_dataset.csv
-│   ├── olist_order_reviews_dataset.csv
-│   ├── olist_orders_dataset.csv
-│   ├── olist_products_dataset.csv
-│   ├── olist_sellers_dataset.csv
-│   └── product_category_name_translation.csv
+├── olist_dwh/                      # dbt проект
+│   ├── macros/                     # Переиспользуемые макросы
+│   │   ├── generate_hub.sql
+│   │   ├── generate_link.sql
+│   │   ├── generate_satellite.sql
+│   │   ├── generate_satellite_multi_active.sql
+│   │   ├── generate_pit.sql
+│   │   ├── generate_bridge.sql
+│   │   └── README.md
+│   ├── models/
+│   │   ├── staging/               # Staging модели
+│   │   │   ├── stg_*.sql
+│   │   │   └── stg_models.yml
+│   │   ├── raw_vault/             # Raw Vault (Data Vault 2.0)
+│   │   │   ├── hubs/
+│   │   │   │   ├── hub_*.sql
+│   │   │   │   └── hubs.yml
+│   │   │   ├── links/
+│   │   │   │   ├── link_*.sql
+│   │   │   │   └── links.yml
+│   │   │   └── satellites/
+│   │   │       ├── sat_*.sql
+│   │   │       └── satellites.yml
+│   │   └── business_vault/        # Аналитические витрины
+│   │       ├── pit_order.sql
+│   │       ├── bridge_order_product_seller.sql
+│   │       ├── v_orders_customer_detail.sql
+│   │       ├── v_order_items_with_details.sql
+│   │       ├── v_customer_metrics.sql
+│   │       └── business_vault.yml
+│   ├── tests/                      # dbt тесты
+│   │   ├── generic/
+│   │   ├── staging/
+│   │   └── raw_vault/
+│   ├── dbt_project.yml
+│   ├── packages.yml
+│   └── profiles.yml
 │
-├── 📂 docker/                      # Docker конфигурация
-│   ├── docker-compose.yml          # PostgreSQL + pgAdmin
-│   └── postgresql.conf             # Оптимизированные настройки PostgreSQL
+├── datasets/                        # Исходные CSV данные
+│   └── olist_*.csv
 │
-├── 📂 sql/                         # DDL скрипты инициализации
+├── docker/
+│   ├── docker-compose.yml
+│   └── postgresql.conf
+│
+├── sql/                            # Инициализационные скрипты
 │   ├── ext/
-│   │   └── external_tables.sql     # Внешние таблицы (file_fdw)
 │   ├── staging/
-│   │   └── init_staging.sql        # Схема staging
-│   └── raw_vault (bronze)/
-│       └── init_raw_vault.sql      # Схема Data Vault
+│   └── raw_vault/
 │
-├── 📂 src/                         # ETL процедуры
-│   ├── staging/
-│   │   └── load_staging.sql        # Процедуры загрузки в staging
-│   ├── raw_vault/
-│   │   ├── load_raw_vault.sql      # Процедуры загрузки в Data Vault
-│   │   └── Вставка zero key и ghost records.sql
-│   ├── etl_orchestrator.sql        # Главный оркестратор ETL
-│   └── Запуск etl.sql              # Скрипт запуска полного ETL
-│
-├── .env.example                    # Шаблон переменных окружения
-├── .gitignore
 └── README.md
 ```
 
-## 🗄️ Модель Data Vault 2.0
+## Data Vault 2.0 Модель
 
-### Hubs (Бизнес-сущности)
+### Hubs (9 шт.)
 
-| Hub | Бизнес-ключ | Описание |
-|-----|-------------|----------|
-| `hub_customer` | customer_unique_id | Уникальные покупатели |
-| `hub_seller` | seller_id | Продавцы маркетплейса |
-| `hub_order` | order_id | Заказы |
-| `hub_product` | product_id | Товары |
-| `hub_review` | review_id | Отзывы |
-| `hub_geolocation` | zip_code_prefix | Географические точки |
-| `hub_product_category` | product_category_name | Категории товаров |
+| Hub | Бизнес-ключ | Тип |
+|-----|-------------|-----|
+| hub_customer | customer_unique_id | Покупатели |
+| hub_orders | order_id | Заказы |
+| hub_products | product_id | Товары |
+| hub_sellers | seller_id | Продавцы |
+| hub_order_items | order_item_id | Позиции заказов |
+| hub_order_payments | payment_id | Платежи |
+| hub_order_reviews | review_id | Отзывы |
+| hub_geolocation | zip_code_prefix | География |
+| hub_product_category_translation | product_category_name | Категории |
 
-### Links (Связи)
+### Links (4 шт.)
 
-| Link | Связь | Описание |
-|------|-------|----------|
-| `link_order_items` | Order ↔ Product ↔ Seller | Позиции в заказе |
-| `link_order_customer` | Order ↔ Customer | Заказ клиента |
-| `link_order_review` | Order ↔ Review | Отзыв к заказу |
-| `link_seller_geolocation` | Seller ↔ Geolocation | Локация продавца |
+| Link | Связь |
+|------|-------|
+| link_order_customer | Order ↔ Customer |
+| link_order_items | Order ↔ Product ↔ Seller |
+| link_order_review | Order ↔ Review |
+| link_seller_geolocation | Seller ↔ Geolocation |
 
-### Satellites (Атрибуты с историей)
+### Satellites (5 шт.)
 
-| Satellite | Родитель | Описание |
-|-----------|----------|----------|
-| `sat_order_item_finance` | link_order_items | Цены и стоимость доставки |
-| `sat_order_status` | hub_order | Статусы и даты заказа |
-| `sat_order_payments` | hub_order | Платежи (multi-active) |
-| `sat_customer_details` | hub_customer | Адрес клиента |
-| `sat_product_details` | hub_product | Характеристики товара |
-| `sat_review_details` | hub_review | Оценка и текст отзыва |
+| Satellite | Описание |
+|-----------|----------|
+| sat_customer_details | Адрес клиента (city, state, zip) |
+| sat_order_status | Статусы и даты заказа |
+| sat_order_payments | Платежи (multi-active) |
+| sat_order_item_finance | Цены и доставка |
+| sat_product_details | Характеристики товара |
 
-## 🚀 Быстрый старт
+### Business Vault
 
-### Предварительные требования
+**Point-in-Time таблицы:**
+- `pit_order` — снимки всех спутников заказа по датам
+
+**Bridge таблицы:**
+- `bridge_order_product_seller` — граф связей Order-Product-Seller
+
+**Аналитические витрины:**
+- `v_orders_customer_detail` — заказы с информацией о клиенте
+- `v_order_items_with_details` — позиции заказов с деталями товаров
+- `v_customer_metrics` — метрики клиентов (кол-во заказов, LTV)
+
+## Быстрый старт
+
+### Требования
 
 - Docker & Docker Compose
-- Git
+- Python 3.9+
+- dbt-postgres
 
-### 1. Клонирование репозитория
+### 1. Клонирование
 
 ```bash
 git clone https://github.com/A95D/e_commerce_olist.git
 cd e_commerce_olist
 ```
 
-### 2. Настройка переменных окружения
+### 2. Окружение
 
 ```bash
 cp .env.example .env
 ```
 
-Отредактируйте файл `.env`:
-
-```env
-DB_USER=olist_admin
-DB_PASSWORD=your_secure_password
-DB_PORT=5432
-PGADMIN_EMAIL=admin@example.com
-PGADMIN_PASSWORD=your_pgadmin_password
-```
-
-### 3. Запуск контейнеров
+### 3. Docker
 
 ```bash
 cd docker
 docker-compose up -d
 ```
 
-### 4. Подключение к базе данных
+### 4. dbt установка
 
-**pgAdmin:** http://localhost:8080
-- Email: из переменной `PGADMIN_EMAIL`
-- Password: из переменной `PGADMIN_PASSWORD`
-
-**psql:**
 ```bash
-psql -h localhost -p 5432 -U olist_admin -d olist_dwh
+cd olist_dwh
+pip install dbt-postgres dbt-utils dbt-audit-helper
+dbt deps
 ```
 
-### 5. Инициализация схем
+### 5. Инициализация БД
 
-Выполните скрипты в следующем порядке:
-
-```sql
--- 1. Внешние таблицы
-\i sql/ext/external_tables.sql
-
--- 2. Staging слой
-\i sql/staging/init_staging.sql
-
--- 3. Raw Vault слой
-\i sql/raw_vault (bronze)/init_raw_vault.sql
-
--- 4. ETL процедуры
-\i src/staging/load_staging.sql
-\i src/raw_vault/load_raw_vault.sql
-\i src/etl_orchestrator.sql
+```bash
+# Создание схем и внешних таблиц
+psql -h localhost -U olist_admin -d olist_dwh -f ../sql/ext/external_tables.sql
+psql -h localhost -U olist_admin -d olist_dwh -f ../sql/staging/init_staging.sql
+psql -h localhost -U olist_admin -d olist_dwh -f ../sql/raw_vault/init_raw_vault.sql
 ```
 
-### 6. Запуск ETL
+### 6. Запуск dbt
 
-```sql
-DO $$
-DECLARE
-    v_batch_id INT;
-BEGIN
-    CALL raw_vault.run_etl_orchestrator('OLIST_MARKETPLACE', v_batch_id);
-    RAISE NOTICE 'ETL завершён. Batch ID: %', v_batch_id;
-END;
-$$;
+```bash
+# Проверка конфигурации
+dbt debug
+
+# Запуск всех моделей
+dbt run
+
+# Запуск тестов
+dbt test
+
+# Генерация документации
+dbt docs generate
+dbt docs serve
 ```
 
-## 📈 Данные Olist
+## Датасет
 
-Датасет содержит информацию о **~100,000 заказов** с 2016 по 2018 год:
+Olist содержит ~100K заказов (2016-2018):
 
-| Датасет | Записей | Описание |
-|---------|---------|----------|
-| Orders | ~100K | Заказы с датами и статусами |
-| Order Items | ~112K | Позиции заказов |
-| Customers | ~99K | Уникальные клиенты |
-| Sellers | ~3K | Продавцы |
-| Products | ~33K | Товары |
-| Reviews | ~100K | Отзывы с оценками |
-| Payments | ~104K | Платежи |
-| Geolocation | ~1M | Географические координаты |
+| Таблица | Записей |
+|---------|---------|
+| Orders | ~100K |
+| Order Items | ~112K |
+| Customers | ~99K |
+| Sellers | ~3K |
+| Products | ~33K |
+| Reviews | ~100K |
+| Payments | ~104K |
+| Geolocation | ~1M |
 
-## 🔧 Технологии
+## Технологии
 
-- **PostgreSQL 15** — основная СУБД
-- **Data Vault 2.0** — методология моделирования DWH
+- **PostgreSQL 15** — СУБД
+- **dbt 1.5+** — трансформация данных
+- **Data Vault 2.0** — методология моделирования
 - **Docker Compose** — контейнеризация
-- **pgAdmin 4** — веб-интерфейс администрирования
-- **PL/pgSQL** — хранимые процедуры ETL
+- **PL/pgSQL** — процедуры и триггеры
 
-## 📝 Особенности реализации
+## Особенности
 
-### ETL Pipeline
+### dbt макросы
 
-1. **Batch-based загрузка** — каждый запуск создаёт уникальный `batch_id`
-2. **Delta-загрузка** — использование `hash_diff` для отслеживания изменений
-3. **Аудит и логирование** — таблицы `etl_batch_log` и `etl_audit_log`
-4. **Обработка ошибок** — EXCEPTION блоки с логированием в audit
+Переиспользуемые макросы для автоматизации создания компонентов Data Vault:
+- `generate_hub` — Hub таблицы с дедупликацией
+- `generate_link` — Link таблицы
+- `generate_satellite` — Satellite таблицы с delta check (hash_diff)
+- `generate_satellite_multi_active` — Satellites с несколькими записями на ключ
+- `generate_pit` — Point-in-Time таблицы с историческими снимками
+- `generate_bridge` — Bridge таблицы для связей
 
-### Data Quality
+### Инкрементальная загрузка
 
-- Очистка данных (trim, upper, nullif)
-- Валидация бизнес-ключей
-- Логирование проблемных записей
+Все модели используют `materialized='incremental'` для эффективной загрузки:
+- Хабы — дедупликация по primary key
+- Линки — исключение уже существующих связей
+- Спутники — вставка только при изменении (hash_diff)
 
-## 📄 Лицензия
+### Качество данных
 
-MIT License
+- Встроенные dbt тесты (unique, not_null, relationships)
+- Валидация целостности ключей
+- Очистка данных в staging слое
 
-## 👤 Автор
+## Ссылки
 
-**Andrey Detistov**
+- [dbt Documentation](https://docs.getdbtlabs.com)
+- [Data Vault 2.0 Guide](https://datavault.com/)
+- [Olist Dataset on Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
 
-- GitHub: [@A95D](https://github.com/A95D)
+## Лицензия
+
+MIT
+
