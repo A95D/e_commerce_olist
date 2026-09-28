@@ -1,0 +1,5 @@
+packages:
+  - git: https://github.com/ScalefreeCOM/datavault4dbt.git
+    name: datavault4dbt
+    revision: bd8711519fe2e9276a35d2134692745a0babcce5
+sha1_hash: 1091bfa2358f7cd6980804f2b62fe0767295b59e

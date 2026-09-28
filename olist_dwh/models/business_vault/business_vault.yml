@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: pit_order
+    description: Point-in-time table for orders with historical satellite snapshots
+    materialization: table
+
+  - name: bridge_order_product_seller
+    description: Bridge table linking orders to products and sellers
+    materialization: incremental
+
+  - name: v_orders_customer_detail
+    description: Denormalized view of orders with latest customer and order status details
+    materialization: view
+
+  - name: v_order_items_with_details
+    description: Order items with product and financial details
+    materialization: view
+
+  - name: v_customer_metrics
+    description: Aggregated customer metrics including order counts and lifetime value
+    materialization: table

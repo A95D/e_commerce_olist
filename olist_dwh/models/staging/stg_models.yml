@@ -1,0 +1,74 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: Staged customer data from raw source
+    columns:
+      - name: hub_customer_hash
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_orders
+    description: Staged orders data
+    columns:
+      - name: hub_order_hash
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_products
+    description: Staged products data
+    columns:
+      - name: hub_product_hash
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_sellers
+    description: Staged sellers data
+    columns:
+      - name: hub_seller_hash
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_order_items
+    description: Staged order items data
+    columns:
+      - name: hub_order_item_hash
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_order_payments
+    description: Staged order payments data
+    columns:
+      - name: hub_order_payment_hash
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_order_reviews
+    description: Staged order reviews data
+    columns:
+      - name: hub_order_review_hash
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_geolocation
+    description: Staged geolocation data
+    columns:
+      - name: hub_geolocation_hash
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_product_category_name_translation
+    description: Staged product category translation
+    columns:
+      - name: hub_category_hash
+        tests:
+          - unique
+          - not_null

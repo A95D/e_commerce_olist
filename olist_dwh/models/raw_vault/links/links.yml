@@ -1,0 +1,65 @@
+version: 2
+
+models:
+  - name: link_order_customer
+    description: Link between orders and customers
+    columns:
+      - name: link_order_customer_hash
+        description: Primary key hash
+        tests:
+          - unique
+          - not_null
+      - name: hub_order_hash
+        tests:
+          - not_null
+      - name: hub_customer_hash
+        tests:
+          - not_null
+      - name: load_date
+      - name: record_source
+      - name: batch_id
+
+  - name: link_order_items
+    description: Link connecting orders, products, and sellers
+    columns:
+      - name: link_order_items_hash
+        tests:
+          - unique
+          - not_null
+      - name: hub_order_hash
+        tests:
+          - not_null
+      - name: hub_product_hash
+        tests:
+          - not_null
+      - name: hub_seller_hash
+        tests:
+          - not_null
+
+  - name: link_order_review
+    description: Link between orders and reviews
+    columns:
+      - name: link_order_review_hash
+        tests:
+          - unique
+          - not_null
+      - name: hub_order_hash
+        tests:
+          - not_null
+      - name: hub_order_review_hash
+        tests:
+          - not_null
+
+  - name: link_seller_geolocation
+    description: Link between sellers and geolocation
+    columns:
+      - name: link_seller_geolocation_hash
+        tests:
+          - unique
+          - not_null
+      - name: hub_seller_hash
+        tests:
+          - not_null
+      - name: hub_geolocation_hash
+        tests:
+          - not_null

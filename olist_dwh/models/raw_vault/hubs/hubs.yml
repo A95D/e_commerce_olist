@@ -1,0 +1,88 @@
+version: 2
+
+models:
+  - name: hub_customer
+    description: Customer hub containing unique customer identifiers
+    columns:
+      - name: hub_customer_hash
+        description: Primary key hash
+        tests:
+          - unique
+          - not_null
+      - name: customer_unique_id
+        description: Natural key
+        tests:
+          - not_null
+      - name: load_date
+        description: Load timestamp
+      - name: record_source
+        description: Source system
+      - name: batch_id
+        description: Batch identifier
+
+  - name: hub_orders
+    description: Orders hub
+    columns:
+      - name: hub_order_hash
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        tests:
+          - not_null
+
+  - name: hub_products
+    description: Products hub
+    columns:
+      - name: hub_product_hash
+        tests:
+          - unique
+          - not_null
+
+  - name: hub_sellers
+    description: Sellers hub
+    columns:
+      - name: hub_seller_hash
+        tests:
+          - unique
+          - not_null
+
+  - name: hub_order_items
+    description: Order items hub
+    columns:
+      - name: hub_order_item_hash
+        tests:
+          - unique
+          - not_null
+
+  - name: hub_order_payments
+    description: Order payments hub
+    columns:
+      - name: hub_order_payment_hash
+        tests:
+          - unique
+          - not_null
+
+  - name: hub_order_reviews
+    description: Order reviews hub
+    columns:
+      - name: hub_order_review_hash
+        tests:
+          - unique
+          - not_null
+
+  - name: hub_geolocation
+    description: Geolocation hub
+    columns:
+      - name: hub_geolocation_hash
+        tests:
+          - unique
+          - not_null
+
+  - name: hub_product_category_translation
+    description: Product category translation hub
+    columns:
+      - name: hub_category_hash
+        tests:
+          - unique
+          - not_null
